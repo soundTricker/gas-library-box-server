@@ -1,1 +1,13 @@
 target/
+src/main/webapp/WEB-INF/classes
+src/main/webapp/WEB-INF/lib
+src/main/webapp/WEB-INF/*.discovery
+src/main/webapp/WEB-INF/*.api
+.apt_generated
+.git
+.settings
+eclipse.lib
+endpoint-libs
+.classpath
+.factorypath
+.project
