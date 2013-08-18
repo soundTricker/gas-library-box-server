@@ -5,6 +5,7 @@ import org.slim3.memcache.Memcache;
 
 import com.appspot.soundtricker.gaslibrarybox.meta.MemberMeta;
 import com.appspot.soundtricker.gaslibrarybox.model.Member;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.users.User;
 
 
@@ -15,13 +16,22 @@ public class MemberService {
 	private final static MemberMeta MM = MemberMeta.get();
 	
 	public static Member get(User user) {
-		Member member = getFromCache(user.getEmail());
+		String email = user.getEmail();
+		return get(email);
+	}
+
+	public static Member get(Key key) {
+		return get(key.getName());
+	}
+	
+	public static Member get(String email) {
+		Member member = getFromCache(email);
 		
 		if(member != null) {
 			return member;
 		}
 		
-		member = Datastore.getOrNull(MM, Datastore.createKey(MM, user.getEmail()));
+		member = Datastore.getOrNull(MM, Datastore.createKey(MM, email));
 		
 		if(member != null) {
 			put2Cache(member);

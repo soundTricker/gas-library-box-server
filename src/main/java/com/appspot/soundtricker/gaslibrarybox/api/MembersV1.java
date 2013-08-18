@@ -1,8 +1,13 @@
 package com.appspot.soundtricker.gaslibrarybox.api;
 
+import javax.inject.Named;
+
+import org.slim3.datastore.Datastore;
 import org.slim3.util.BeanUtil;
+import org.slim3.util.CopyOptions;
 
 import com.appspot.soundtricker.gaslibrarybox.api.model.LibraryBoxMember;
+import com.appspot.soundtricker.gaslibrarybox.meta.MemberMeta;
 import com.appspot.soundtricker.gaslibrarybox.model.Member;
 import com.appspot.soundtricker.gaslibrarybox.service.MemberService;
 import com.google.api.server.spi.ServiceException;
@@ -10,6 +15,7 @@ import com.google.api.server.spi.config.AnnotationBoolean;
 import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiAuth;
 import com.google.api.server.spi.config.ApiMethod;
+import com.google.api.server.spi.config.ApiMethod.HttpMethod;
 import com.google.api.server.spi.response.BadRequestException;
 import com.google.api.server.spi.response.ConflictException;
 import com.google.api.server.spi.response.UnauthorizedException;
@@ -28,10 +34,39 @@ import com.google.common.base.Strings;
 		description = "The gas library box members API"
 		)
 public class MembersV1 {
+	
+	private static final MemberMeta MM = MemberMeta.get();
+	
+	@ApiMethod(
+			name = "get",
+			httpMethod = HttpMethod.GET,
+			path = "{key}"
+			)
+	public LibraryBoxMember get(User user, @Named("key") String key) {
+		
+		if(user != null && "me".equals(key)) {
+			LibraryBoxMember lbm = new LibraryBoxMember();
+			Member member = MemberService.get(user);
+			
+			copy(member,lbm);
+			
+			return lbm;
+		}
+		
+		Member member = MemberService.get(Datastore.stringToKey(key));
+		LibraryBoxMember lbm = new LibraryBoxMember();
+		copy(member, lbm);
+		return lbm;
+	}
+
+	private void copy(Member member,LibraryBoxMember lbm) {
+		BeanUtil.copy(member, lbm);
+		lbm.setKey(Datastore.keyToString(member.getKey()));
+	}
 
 	@ApiMethod(
 			name="register",
-			httpMethod = "post"			
+			httpMethod = HttpMethod.POST			
 	)
 	public LibraryBoxMember register(User user, LibraryBoxMember member) throws ServiceException {
 		
@@ -64,13 +99,13 @@ public class MembersV1 {
 		}
 		
 		Member m = new Member();
-		BeanUtil.copy(member, m);
+		BeanUtil.copy(member, m, new CopyOptions().exclude(MM.key));
 		
 		MemberService.register(user, m);
 		
-		BeanUtil.copy(m, member);
+		BeanUtil.copy(m, member, new CopyOptions().exclude(MM.key));
 		
-		member.setId(m.getKey().getId());
+		member.setKey(Datastore.keyToString(m.getKey()));
 		
 		return member;
 	}

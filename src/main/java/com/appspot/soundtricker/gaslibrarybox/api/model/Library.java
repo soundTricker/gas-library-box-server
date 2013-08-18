@@ -11,6 +11,7 @@ public class Library {
 	private Date modifiedAt;
 	private String authorName;
 	private String authorUrl;
+	private String authorKey;
 	
 	public final String getKey() {
 		return key;
@@ -71,6 +72,12 @@ public class Library {
 	}
 	public void setAuthorIconUrl(String authorIconUrl) {
 		this.authorIconUrl = authorIconUrl;
+	}
+	public String getAuthorKey() {
+		return authorKey;
+	}
+	public void setAuthorKey(String authorKey) {
+		this.authorKey = authorKey;
 	}
 	private String sourceUrl;
 	private String authorIconUrl;

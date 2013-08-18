@@ -9,7 +9,6 @@ import org.slim3.datastore.Model;
 import org.slim3.datastore.ModificationDate;
 
 import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.users.User;
 
 @Model(schemaVersion = 1)
 public class GasLibrary implements Serializable {
@@ -38,7 +37,7 @@ public class GasLibrary implements Serializable {
     private Date registeredAt;
 
 	@Attribute(listener=ModificationDate.class)
-    private Date modifitedAt;
+    private Date modifiedAt;
 
 	@Attribute
     private String authorName;
@@ -46,8 +45,8 @@ public class GasLibrary implements Serializable {
 	@Attribute(unindexed=true)
     private String authorUrl;
 
-	@Attribute(unindexed=true)
-    private User author;
+	@Attribute
+    private Key authorKey;
 	
 	@Attribute(unindexed=true)
 	private String authorIconUrl;
@@ -74,8 +73,8 @@ public class GasLibrary implements Serializable {
         return true;
     }
 
-	public User getAuthor() {
-		return author;
+	public Key getAuthorKey() {
+		return authorKey;
 	}
 
 	public String getAuthorName() {
@@ -103,8 +102,8 @@ public class GasLibrary implements Serializable {
 		return label;
 	}
 
-	public Date getModifitedAt() {
-		return modifitedAt;
+	public Date getModifiedAt() {
+		return modifiedAt;
 	}
 
 	public Date getRegisteredAt() {
@@ -132,8 +131,8 @@ public class GasLibrary implements Serializable {
         return result;
     }
     
-    public void setAuthor(User author) {
-		this.author = author;
+    public void setAuthorKey(Key authorKey) {
+		this.authorKey = authorKey;
 	}
     
     public void setAuthorName(String authorName) {
@@ -164,8 +163,8 @@ public class GasLibrary implements Serializable {
 		this.label = label;
 	}
 
-    public void setModifitedAt(Date modifitedAt) {
-		this.modifitedAt = modifitedAt;
+    public void setModifiedAt(Date modifiedAt) {
+		this.modifiedAt = modifiedAt;
 	}
 
     public void setRegisteredAt(Date registeredAt) {
