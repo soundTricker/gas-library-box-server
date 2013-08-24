@@ -44,7 +44,7 @@ import com.google.common.collect.Lists;
 	auth = @ApiAuth(allowCookieAuth = AnnotationBoolean.TRUE),
 	scopes = {"https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/userinfo.profile"},
-	clientIds = {Ids.WEB_CLIENT_ID, Ids.API_EXPLORER_ID},
+	clientIds = {Ids.WEB_CLIENT_ID, Ids.CHROME_EXTENSION_ID, Ids.API_EXPLORER_ID},
 	audiences = {Ids.WEB_CLIENT_ID},
 	defaultVersion = AnnotationBoolean.TRUE,
 	description = "The Google Apps Script Library Box API"

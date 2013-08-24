@@ -13,6 +13,10 @@ public class Library {
 	private String authorUrl;
 	private String authorKey;
 	
+	/**
+	 * get library key
+	 * @return library key
+	 */
 	public final String getKey() {
 		return key;
 	}

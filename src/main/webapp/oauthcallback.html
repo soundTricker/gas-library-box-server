@@ -1,0 +1,32 @@
+<html>
+<head>
+<meta charset="UTF-8" />
+<style type="text/css">
+iframe {
+  display: none;
+}
+</style>
+</head>
+<body onload="initialize();">
+  <p>Finish authorized, please close this window.</p>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+<script type="text/javascript">
+function initialize() {
+  var hash = location.hash.substring(1).split("&");
+  var params = {};
+  $.each(hash, function(i, p) {
+    var a = p.split("=");
+    params[a[0]] = a[1];
+  });
+  var iframe = document.createElement("iframe");
+  var url = "chrome-extension://"
+          + params.state
+          + "/bridge.html#"
+          + "access_token="
+          + params.access_token;
+  iframe.src = url;
+  document.body.appendChild(iframe);
+}
+</script>
+</body>
+</html>

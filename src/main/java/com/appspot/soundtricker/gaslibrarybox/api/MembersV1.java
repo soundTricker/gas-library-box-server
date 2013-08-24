@@ -18,7 +18,9 @@ import com.google.api.server.spi.config.ApiMethod;
 import com.google.api.server.spi.config.ApiMethod.HttpMethod;
 import com.google.api.server.spi.response.BadRequestException;
 import com.google.api.server.spi.response.ConflictException;
+import com.google.api.server.spi.response.NotFoundException;
 import com.google.api.server.spi.response.UnauthorizedException;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.users.User;
 import com.google.common.base.Strings;
 
@@ -26,9 +28,11 @@ import com.google.common.base.Strings;
 		name = "members",
 		version = "v1",
 		auth = @ApiAuth(allowCookieAuth = AnnotationBoolean.TRUE),
-		scopes = {"https://www.googleapis.com/auth/userinfo.email",
-        "https://www.googleapis.com/auth/userinfo.profile"},
-		clientIds = {Ids.WEB_CLIENT_ID, Ids.API_EXPLORER_ID},
+		scopes = {
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile"
+			},
+		clientIds = {Ids.WEB_CLIENT_ID, Ids.CHROME_EXTENSION_ID, Ids.API_EXPLORER_ID},
 		audiences = {Ids.WEB_CLIENT_ID},
 		defaultVersion = AnnotationBoolean.TRUE,
 		description = "The gas library box members API"
@@ -40,20 +44,37 @@ public class MembersV1 {
 	@ApiMethod(
 			name = "get",
 			httpMethod = HttpMethod.GET,
-			path = "{key}"
+			path = "{userKey}",
+			clientIds = {Ids.WEB_CLIENT_ID, Ids.CHROME_EXTENSION_ID, Ids.API_EXPLORER_ID},
+			audiences = {Ids.WEB_CLIENT_ID}
 			)
-	public LibraryBoxMember get(User user, @Named("key") String key) {
+	public LibraryBoxMember get(User user, @Named("userKey") String userKey) throws ServiceException {
 		
-		if(user != null && "me".equals(key)) {
-			LibraryBoxMember lbm = new LibraryBoxMember();
+		if(user != null && "me".equals(userKey)) {
 			Member member = MemberService.get(user);
 			
+			if(member == null) {
+				throw new NotFoundException("you are not registered");
+			}
+			
+			LibraryBoxMember lbm = new LibraryBoxMember();
 			copy(member,lbm);
 			
 			return lbm;
 		}
 		
-		Member member = MemberService.get(Datastore.stringToKey(key));
+		Key key = null;
+		try {
+			key = Datastore.stringToKey(userKey);
+		} catch (Exception e) {
+			throw new BadRequestException("invalid key");
+		}
+		Member member = MemberService.get(key);
+		
+		if(member == null) {
+			throw new NotFoundException("this user not found");
+		}
+		
 		LibraryBoxMember lbm = new LibraryBoxMember();
 		copy(member, lbm);
 		return lbm;
@@ -66,7 +87,9 @@ public class MembersV1 {
 
 	@ApiMethod(
 			name="register",
-			httpMethod = HttpMethod.POST			
+			httpMethod = HttpMethod.POST,
+			clientIds = {Ids.WEB_CLIENT_ID, Ids.CHROME_EXTENSION_ID, Ids.API_EXPLORER_ID},
+			audiences = {Ids.WEB_CLIENT_ID}			
 	)
 	public LibraryBoxMember register(User user, LibraryBoxMember member) throws ServiceException {
 		
