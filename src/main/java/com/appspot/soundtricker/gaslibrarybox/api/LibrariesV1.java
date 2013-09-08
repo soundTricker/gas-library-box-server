@@ -1,6 +1,8 @@
 package com.appspot.soundtricker.gaslibrarybox.api;
 
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.inject.Named;
@@ -16,6 +18,7 @@ import com.appspot.soundtricker.gaslibrarybox.meta.GasLibraryMeta;
 import com.appspot.soundtricker.gaslibrarybox.meta.MemberMeta;
 import com.appspot.soundtricker.gaslibrarybox.model.GasLibrary;
 import com.appspot.soundtricker.gaslibrarybox.model.Member;
+import com.appspot.soundtricker.gaslibrarybox.service.FusionService;
 import com.appspot.soundtricker.gaslibrarybox.service.LibraryService;
 import com.appspot.soundtricker.gaslibrarybox.service.MemberService;
 import com.google.api.server.spi.ServiceException;
@@ -30,6 +33,7 @@ import com.google.api.server.spi.response.CollectionResponse;
 import com.google.api.server.spi.response.CollectionResponse.Builder;
 import com.google.api.server.spi.response.ConflictException;
 import com.google.api.server.spi.response.ForbiddenException;
+import com.google.api.server.spi.response.InternalServerErrorException;
 import com.google.api.server.spi.response.NotFoundException;
 import com.google.api.server.spi.response.UnauthorizedException;
 import com.google.appengine.api.datastore.Key;
@@ -42,8 +46,7 @@ import com.google.common.collect.Lists;
 @Api(name = "libraries",
 	version = "v1",
 	auth = @ApiAuth(allowCookieAuth = AnnotationBoolean.TRUE),
-	scopes = {"https://www.googleapis.com/auth/userinfo.email",
-    "https://www.googleapis.com/auth/userinfo.profile"},
+	scopes = {"https://www.googleapis.com/auth/userinfo.email"},
 	clientIds = {Ids.WEB_CLIENT_ID, Ids.CHROME_EXTENSION_ID, Ids.API_EXPLORER_ID},
 	audiences = {Ids.WEB_CLIENT_ID},
 	defaultVersion = AnnotationBoolean.TRUE,
@@ -52,6 +55,8 @@ import com.google.common.collect.Lists;
 public class LibrariesV1 {
 	
 	private static final GasLibraryMeta GLM = GasLibraryMeta.get();
+	
+	private static final Logger logger = Logger.getLogger(LibrariesV1.class.getName());
 	
 	@ApiMethod(
 			name="list",
@@ -159,7 +164,7 @@ public class LibrariesV1 {
 			throw new BadRequestException("json body is required.");
 		}
 		
-		if(Strings.isNullOrEmpty(library.getKey())) {
+		if(Strings.isNullOrEmpty(library.getLibraryKey())) {
 			throw new BadRequestException("key property is required");
 		}
 		
@@ -171,7 +176,7 @@ public class LibrariesV1 {
 			throw new BadRequestException("sourceUrl property is required");
 		}
 		
-		if(LibraryService.get(library.getKey()) != null) {
+		if(LibraryService.get(library.getLibraryKey()) != null) {
 			throw new ConflictException("This library have been registered");
 		}
 		
@@ -180,11 +185,11 @@ public class LibrariesV1 {
 		library.setAuthorName(member.getNickname());
 		library.setAuthorUrl(member.getUrl());
 		library.setAuthorIconUrl(member.getUserIconUrl());
-		BeanUtil.copy(library, gasLibrary, new CopyOptions().exclude(GLM.key, GLM.authorKey));
+		BeanUtil.copy(library, gasLibrary, new CopyOptions().exclude(GLM.authorKey));
 		
 		gasLibrary.setAuthorKey(member.getKey());
 		
-		LibraryService.put(gasLibrary, library.getKey());		
+		LibraryService.put(gasLibrary, library.getLibraryKey());		
 		
 		copy(gasLibrary, library);
 		
@@ -193,10 +198,10 @@ public class LibrariesV1 {
 	
 	@ApiMethod(
 			name ="put",
-			path = "{key}",
+			path = "{libraryKey}",
 			httpMethod = HttpMethod.PUT
 			)
-	public Library put(User user, @Named("key") String key, Library library) throws ServiceException {
+	public Library put(User user, @Named("libraryKey") String key, Library library) throws ServiceException {
 		if(user == null) {
 			throw new UnauthorizedException("insert api is required authorize");
 		}
@@ -217,12 +222,56 @@ public class LibrariesV1 {
 		}
 		
 		BeanUtil.copy(library, gasLibrary, new CopyOptions().include(GLM.desc, GLM.longDesc, GLM.label, GLM.sourceUrl));
-		
+
 		LibraryService.put(gasLibrary, key);
 		
 		copy(gasLibrary, library);
 		
 		return library;
+	}
+	
+	@ApiMethod(
+			name = "search",
+			httpMethod = HttpMethod.GET
+	)
+	public CollectionResponse<Library> search(@Named("query") String query, @Nullable @Named("nextToken") String next) throws ServiceException, InterruptedException {
+		
+		if(Strings.isNullOrEmpty(query)) {
+			throw new BadRequestException("given query parameter");
+		}
+		
+		int offset = 0;
+		if(!Strings.isNullOrEmpty(next)) {
+			offset = Integer.parseInt(next);
+		}
+		
+		int limit = 100;
+		
+		List<String> keys = null;
+		try{
+			keys = FusionService.searchLibraryKey(query, offset, limit);
+		} catch(Exception e) {
+			logger.log(Level.SEVERE, e.getMessage(), e);
+			throw new InternalServerErrorException("Sorry, please wait a few hours");
+		}
+		
+		if(keys == null || keys.size() == 0) {
+			throw new NotFoundException("Not found any libraries.");
+		}
+		
+		List<GasLibrary> list = LibraryService.get(keys);
+		
+		List<Library> convertedList = convertList(list);
+		
+		Builder<Library> builder = CollectionResponse.<Library>builder();
+		
+		builder.setItems(convertedList);
+		
+		if(convertedList.size() >= limit) {
+			builder.setNextPageToken(String.valueOf(offset + limit));
+		}
+		
+		return builder.build();
 	}
 	
 	@ApiMethod(
@@ -251,8 +300,8 @@ public class LibrariesV1 {
 
 	private static void copy(GasLibrary gasLibrary, Library l) {
 		BeanUtil.copy(gasLibrary, l, new CopyOptions().exclude(GLM.key, GLM.authorKey));
-		
-		l.setKey(gasLibrary.getKey().getName());
+
+		l.setLibraryKey(gasLibrary.getKey().getName());
 		l.setAuthorKey(Datastore.keyToString(gasLibrary.getAuthorKey()));
 	}
 	

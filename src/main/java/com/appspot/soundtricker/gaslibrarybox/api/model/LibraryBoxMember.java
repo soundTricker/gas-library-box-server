@@ -4,7 +4,7 @@ import java.util.Date;
 
 public class LibraryBoxMember {
 	
-	private String key;
+	private String memberKey;
 
 	private String nickname;
     
@@ -56,12 +56,12 @@ public class LibraryBoxMember {
 		this.modifitedAt = modifitedAt;
 	}
 
-	public String getKey() {
-		return key;
+	public String getMemberKey() {
+		return memberKey;
 	}
 
-	public void setKey(String key) {
-		this.key = key;
+	public void setMemberKey(String key) {
+		this.memberKey = key;
 	}
 
 }

@@ -3,7 +3,7 @@ package com.appspot.soundtricker.gaslibrarybox.api.model;
 import java.util.Date;
 
 public class Library {
-	private String key;
+	private String libraryKey;
 	private String label;
 	private String desc;
 	private String longDesc;
@@ -17,11 +17,11 @@ public class Library {
 	 * get library key
 	 * @return library key
 	 */
-	public final String getKey() {
-		return key;
+	public final String getLibraryKey() {
+		return libraryKey;
 	}
-	public final void setKey(String key) {
-		this.key = key;
+	public final void setLibraryKey(String key) {
+		this.libraryKey = key;
 	}
 	public final String getLabel() {
 		return label;

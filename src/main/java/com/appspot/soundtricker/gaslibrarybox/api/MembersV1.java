@@ -29,8 +29,7 @@ import com.google.common.base.Strings;
 		version = "v1",
 		auth = @ApiAuth(allowCookieAuth = AnnotationBoolean.TRUE),
 		scopes = {
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile"
+			"https://www.googleapis.com/auth/userinfo.email"
 			},
 		clientIds = {Ids.WEB_CLIENT_ID, Ids.CHROME_EXTENSION_ID, Ids.API_EXPLORER_ID},
 		audiences = {Ids.WEB_CLIENT_ID},
@@ -82,7 +81,7 @@ public class MembersV1 {
 
 	private void copy(Member member,LibraryBoxMember lbm) {
 		BeanUtil.copy(member, lbm);
-		lbm.setKey(Datastore.keyToString(member.getKey()));
+		lbm.setMemberKey(Datastore.keyToString(member.getKey()));
 	}
 
 	@ApiMethod(
@@ -125,10 +124,10 @@ public class MembersV1 {
 		BeanUtil.copy(member, m, new CopyOptions().exclude(MM.key));
 		
 		MemberService.register(user, m);
-		
+
 		BeanUtil.copy(m, member, new CopyOptions().exclude(MM.key));
 		
-		member.setKey(Datastore.keyToString(m.getKey()));
+		member.setMemberKey(Datastore.keyToString(m.getKey()));
 		
 		return member;
 	}

@@ -30,7 +30,7 @@ public class GasLibrary implements Serializable {
 	@Attribute(unindexed=true)
     private String desc;
 	
-	@Attribute(unindexed=true)
+	@Attribute(unindexed=true, lob=true)
 	private String longDesc;
 
 	@Attribute(listener=CreationDate.class)

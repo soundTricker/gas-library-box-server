@@ -7,7 +7,11 @@ import org.slim3.memcache.Memcache;
 
 import com.appspot.soundtricker.gaslibrarybox.meta.GasLibraryMeta;
 import com.appspot.soundtricker.gaslibrarybox.model.GasLibrary;
+import com.google.appengine.api.backends.BackendServiceFactory;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.taskqueue.QueueFactory;
+import com.google.appengine.api.taskqueue.TaskOptions;
+import com.google.appengine.api.taskqueue.TaskOptions.Method;
 import com.google.common.collect.Lists;
 
 
@@ -17,8 +21,6 @@ public class LibraryService {
 	
 	private final static String LIBRARY_CACHE_KEY_FORMAT = "library_%s";
 
-	
-	
 	public static GasLibrary get(String key) {
 		
 		GasLibrary gasLibrary = getFromCache(key);
@@ -69,16 +71,52 @@ public class LibraryService {
 	public static void delete(GasLibrary gasLibrary) {
 		Memcache.delete(String.format(LIBRARY_CACHE_KEY_FORMAT, gasLibrary.getKey().getName()));
 		Datastore.delete(gasLibrary.getKey());
+		
+		QueueFactory.getDefaultQueue().addAsync(
+				TaskOptions.Builder
+				.withParam("key", gasLibrary.getKey().getName())
+				.url("/backend/task/deleteFromFusionTable")
+				.method(Method.GET)
+				.header("Host", BackendServiceFactory.getBackendService().getBackendAddress("backend"))
+		);
 	}
 
-	public static void put(GasLibrary gasLibrary, String key) {
+	public static void put(final GasLibrary gasLibrary, String key) {
 		gasLibrary.setKey(Datastore.createKey(GLM, key));
 		
 		Datastore.put(gasLibrary);
 		
 		put2Cache(gasLibrary, key);
 		
-		//TODO fts
+		QueueFactory.getDefaultQueue().addAsync(
+				TaskOptions.Builder
+				.withParam("key", key)
+				.url("/backend/task/post2FusionTable")
+				.method(Method.GET)
+				.header("Host", BackendServiceFactory.getBackendService().getBackendAddress("backend"))
+		);
+	}
+
+	public static List<GasLibrary> get(List<String> keys) {
+		
+		List<Key> notGetList = Lists.newArrayList();
+		List<GasLibrary> result = Lists.newArrayListWithCapacity(keys.size());
+		for (String key : keys) {
+			GasLibrary gasLibrary = getFromCache(key);
+			
+			if(gasLibrary != null) {
+				result.add(gasLibrary);
+				continue;
+			}
+			
+			notGetList.add(Datastore.createKey(GLM, key));
+		}
+		
+		List<GasLibrary> list = Datastore.get(GLM, notGetList);
+		
+		result.addAll(list);
+		
+		return Datastore.sortInMemory(result, GLM.modifiedAt.desc);
 	}
 	
 }
