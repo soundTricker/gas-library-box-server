@@ -11,3 +11,4 @@ endpoint-libs
 .classpath
 .factorypath
 .project
+src/main/resources/client_secrets.json
