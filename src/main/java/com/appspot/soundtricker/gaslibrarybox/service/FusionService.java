@@ -58,7 +58,7 @@ public class FusionService {
 				JSON_FACTORY, getClientCredential(),
 				Collections.singleton(FusiontablesScopes.FUSIONTABLES))
 				.setDataStoreFactory(DATA_STORE_FACTORY)
-				.setAccessType("offline").build();
+				.setAccessType("offline").setApprovalPrompt("force").build();
 	}
 	
 	public static String getUserId() {
@@ -115,7 +115,7 @@ public class FusionService {
 	
 	public static void delete(String rowID) throws IOException {
 		Fusiontables fusiontables = loadClient();
-		fusiontables.query().sql("DELETE From " + TABLE_ID + " Where ROWID=" + rowID).execute();		
+		fusiontables.query().sql("DELETE From " + TABLE_ID + " Where ROWID = '" + rowID + "'").execute();		
 	}
 	
 	public static List<String> searchLibraryKey(String query, int offset, int limit) throws IOException, InterruptedException {

@@ -276,10 +276,10 @@ public class LibrariesV1 {
 	
 	@ApiMethod(
 			name = "delete",
-			path = "{key}",
+			path = "{libraryKey}",
 			httpMethod = HttpMethod.DELETE
 	)
-	public void delete(User user, @Named("key") String key) throws ServiceException {
+	public void delete(User user, @Named("libraryKey") String key) throws ServiceException {
 		
 		if(user == null) {
 			throw new UnauthorizedException("required authorize");
